@@ -38,8 +38,8 @@ Installation & Setup
 
 Step 1: Clone the Repository
 
-git clone https://github.com/youruserid/p2p-chat-app.git
-cd p2p-chat-app
+git clone https://github.com/youruserid/P2P-CHAT_APP.git
+cd P2P-CHAT_APP
 
 Step 2: Run the Application
 
