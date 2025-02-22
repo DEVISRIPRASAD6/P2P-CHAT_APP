@@ -18,8 +18,7 @@ class Peer:
         try:
             self.server_socket.bind(("0.0.0.0", self.port))
             self.server_socket.listen(5)
-            host_ip = socket.gethostbyname(socket.gethostname())
-            print(f"[SERVER] Listening on {host_ip}:{self.port}")
+            print(f"[SERVER] Listening on {socket.gethostbyname(socket.gethostname())}:{self.port}")
         except Exception as e:
             print(f"[ERROR] Failed to start server: {e}")
             return
@@ -39,25 +38,20 @@ class Peer:
         """Handles messages received from connected peers."""
         try:
             message = client_socket.recv(1024).decode("utf-8").strip()
-            if not message:
-                return
-
-            parts = message.split(" ", 2)
-            if len(parts) == 3:
-                sender_ip_port, team_name, chat_message = parts
-                sender_ip, sender_port = sender_ip_port.split(":")
-                sender_port = int(sender_port)
-                
-                print(f"{sender_ip}:{sender_port} {chat_message}")
-                self.add_peer(sender_ip, sender_port)
-                
-                if chat_message.lower() == "exit":
-                    print(f"[INFO] Peer {sender_ip}:{sender_port} disconnected.")
-                    self.peers.discard((sender_ip, sender_port))
-            else:
-                print(f"[RECEIVED] Invalid format from {addr}: {message}")
-
-            client_socket.sendall(f"[ACK] Message received from {self.port}".encode("utf-8"))
+            if message:
+                parts = message.split(" ", 2)
+                if len(parts) == 3:
+                    sender_ip_port, team_name, chat_message = parts
+                    sender_ip, sender_port = sender_ip_port.split(":")
+                    sender_port = int(sender_port)
+                    print(f"{sender_ip}:{sender_port} {chat_message}")
+                    self.add_peer(sender_ip, sender_port)
+                    if chat_message.lower() == "exit":
+                        print(f"[INFO] Peer {sender_ip}:{sender_port} disconnected.")
+                        self.peers.discard((sender_ip, sender_port))
+                else:
+                    print(f"[RECEIVED] Invalid format from {addr}: {message}")
+                client_socket.sendall(f"[ACK] Message received from {self.port}".encode("utf-8"))
         except Exception as e:
             print(f"[ERROR] Handling client {addr}: {e}")
         finally:
@@ -69,18 +63,14 @@ class Peer:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 client_socket.settimeout(5)
                 client_socket.connect((ip, port))
-                sender_ip = socket.gethostbyname(socket.gethostname())
-                formatted_message = f"{sender_ip}:{self.port} {self.name} {message}"
+                formatted_message = f"{socket.gethostbyname(socket.gethostname())}:{self.port} {self.name} {message}"
                 client_socket.sendall(formatted_message.encode("utf-8"))
                 print(f"[SENT] {formatted_message}")
-
-                response = client_socket.recv(1024).decode("utf-8").strip()
-                print(response)
-                
-                self.add_peer(ip, port)  
+                print(client_socket.recv(1024).decode("utf-8").strip())
+                self.add_peer(ip, port)
         except (socket.timeout, ConnectionRefusedError):
             print(f"[ERROR] Peer {ip}:{port} is unreachable. Removing from list.")
-            self.peers.discard((ip, port)) 
+            self.peers.discard((ip, port))
         except Exception as e:
             print(f"[ERROR] Sending message to {ip}:{port}: {e}")
 
@@ -93,11 +83,10 @@ class Peer:
 
     def query_peers(self):
         """Displays active peers."""
-        if self.peers:
-            print("Connected Peers:")
-            for ip, port in sorted(self.peers):
-                print(f"{ip}:{port}")
-        else:
+        print("Connected Peers:")
+        for ip, port in sorted(self.peers):
+            print(f"{ip}:{port}")
+        if not self.peers:
             print("No Connected Peers")
 
     def connect_to_peer(self, ip, port):
@@ -105,15 +94,10 @@ class Peer:
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 client_socket.connect((ip, port))
-                sender_ip = socket.gethostbyname(socket.gethostname())
-                connect_message = f"{sender_ip}:{self.port} {self.name} Connected"
+                connect_message = f"{socket.gethostbyname(socket.gethostname())}:{self.port} {self.name} Connected"
                 client_socket.sendall(connect_message.encode("utf-8"))
-                
                 print(f"[CONNECTED] To {ip}:{port}")
-                
-                response = client_socket.recv(1024).decode("utf-8").strip()
-                print(response)
-                
+                print(client_socket.recv(1024).decode("utf-8").strip())
                 self.add_peer(ip, port)
         except ConnectionRefusedError:
             print(f"[ERROR] Connection refused by {ip}:{port}. Ensure the peer is running.")
@@ -138,30 +122,25 @@ def main():
     name = input("Enter your team name: ")
     port = int(input("Enter your port number: "))
     peer = Peer(name, port)
-    
-    server_thread = threading.Thread(target=peer.start_server, daemon=True)
-    server_thread.start()
+    threading.Thread(target=peer.start_server, daemon=True).start()
     
     while True:
         print("\n***** Menu *****")
-        print("1 . Send message")
-        print("2 . Query connected peers")
-        print("3 . Connect to a peer")
-        print("4 . Connect to active peers")
-        print("0 . Quit")
+        print("1. Send message")
+        print("2. Query connected peers")
+        print("3. Connect to a peer")
+        print("4. Connect to active peers")
+        print("0. Quit")
         choice = input("Enter choice: ")
         
         if choice == "1":
             ip = input("Enter the recipient’s IP address: ")
             port = int(input("Enter the recipient’s port number: "))
-            message = input("Enter your message: ")
-            peer.send_message(ip, port, message)
+            peer.send_message(ip, port, input("Enter your message: "))
         elif choice == "2":
             peer.query_peers()
         elif choice == "3":
-            ip = input("Enter peer’s IP address: ")
-            port = int(input("Enter peer’s port number: "))
-            peer.connect_to_peer(ip, port)
+            peer.connect_to_peer(input("Enter peer’s IP address: "), int(input("Enter peer’s port number: ")))
         elif choice == "4":
             peer.connect_to_active_peers()
         elif choice == "0":
